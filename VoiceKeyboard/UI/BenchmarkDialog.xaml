@@ -1,0 +1,113 @@
+<Window x:Class="VoiceKeyboard.UI.BenchmarkDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Model Benchmark"
+        Width="420" Height="340"
+        ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner"
+        Background="#F3F3F3">
+
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <TextBlock Grid.Row="0" Text="Model Speed Test"
+                   FontSize="16" FontWeight="SemiBold" Margin="0,0,0,8"/>
+        <TextBlock Grid.Row="1" TextWrapping="Wrap" Foreground="#555" FontSize="12"
+                   Text="Click 'Start Recording', speak for 5 seconds, then click 'Stop &amp; Test'."
+                   Margin="0,0,0,16"/>
+
+        <!-- Results panel -->
+        <Border Grid.Row="2" Background="White" CornerRadius="8" Padding="16">
+            <StackPanel>
+
+                <!-- Recording indicator -->
+                <StackPanel x:Name="PanelRecording" Orientation="Horizontal"
+                            Visibility="Collapsed" Margin="0,0,0,12">
+                    <Ellipse Width="10" Height="10" Fill="#E53935" Margin="0,0,8,0"
+                             x:Name="RecordDot"/>
+                    <TextBlock Text="Recording…" Foreground="#E53935" FontWeight="Medium"/>
+                </StackPanel>
+
+                <!-- Results -->
+                <StackPanel x:Name="PanelResults" Visibility="Collapsed">
+                    <Grid Margin="0,4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="160"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Latency:"/>
+                        <TextBlock x:Name="TxtLatency" Grid.Column="1" FontWeight="SemiBold"/>
+                    </Grid>
+                    <Grid Margin="0,4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="160"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Real-time factor:"/>
+                        <TextBlock x:Name="TxtRtf" Grid.Column="1" FontWeight="SemiBold"/>
+                    </Grid>
+                    <Grid Margin="0,4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="160"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Device:"/>
+                        <TextBlock x:Name="TxtDevice" Grid.Column="1" FontWeight="SemiBold"/>
+                    </Grid>
+                    <Grid Margin="0,4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="160"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Rating:"/>
+                        <TextBlock x:Name="TxtRating" Grid.Column="1"
+                                   FontWeight="Bold" FontSize="14"/>
+                    </Grid>
+                    <TextBlock Text="Transcript preview:" Margin="0,12,0,4" Foreground="#555"/>
+                    <TextBlock x:Name="TxtTranscript" TextWrapping="Wrap"
+                               FontStyle="Italic" Foreground="#333" FontSize="12"/>
+                </StackPanel>
+
+                <!-- Idle / processing state -->
+                <TextBlock x:Name="TxtIdle"
+                           Text="Press 'Start Recording' to begin the benchmark."
+                           Foreground="#888" FontSize="12" TextWrapping="Wrap"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Buttons -->
+        <StackPanel Grid.Row="3" Orientation="Horizontal"
+                    HorizontalAlignment="Right" Margin="0,16,0,0">
+            <Button x:Name="BtnRecord" Content="Start Recording"
+                    Background="#0078D4" Foreground="White"
+                    Padding="14,7" Click="BtnRecord_Click" Margin="0,0,8,0">
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                CornerRadius="4" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Button.Template>
+            </Button>
+            <Button x:Name="BtnClose" Content="Close"
+                    Background="#E0E0E0" Foreground="#333"
+                    Padding="14,7" Click="BtnClose_Click">
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                CornerRadius="4" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Button.Template>
+            </Button>
+        </StackPanel>
+    </Grid>
+</Window>

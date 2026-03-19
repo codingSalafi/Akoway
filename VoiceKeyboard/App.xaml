@@ -1,0 +1,10 @@
+<Application x:Class="VoiceKeyboard.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             ShutdownMode="OnExplicitShutdown">
+    <Application.Resources>
+        <ResourceDictionary>
+            <!-- Global styles can go here -->
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

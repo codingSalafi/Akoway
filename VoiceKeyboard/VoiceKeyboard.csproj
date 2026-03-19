@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>Akoway</AssemblyName>
+    <RootNamespace>VoiceKeyboard</RootNamespace>
+    <Version>1.0.0</Version>
+    <Company>Akoway</Company>
+    <Description>Akoway — Free Offline Voice Dictation for Windows</Description>
+    <ApplicationIcon>Resources\Icons\akoway.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- STT Engine: C# wrapper around whisper.cpp with CUDA support -->
+    <PackageReference Include="Whisper.net" Version="1.7.3" />
+    <PackageReference Include="Whisper.net.Runtime" Version="1.7.3" />
+    <PackageReference Include="Whisper.net.Runtime.Cuda" Version="1.7.3" />
+
+    <!-- Audio capture -->
+    <PackageReference Include="NAudio" Version="2.2.1" />
+
+    <!-- System tray icon -->
+    <PackageReference Include="Hardcodet.NotifyIcon.Wpf" Version="1.1.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- App branding icon (exe/installer) -->
+    <Resource Include="Resources\Icons\akoway.ico" />
+    <!-- Tray state icons — embedded so they work in self-contained publish -->
+    <EmbeddedResource Include="Resources\Icons\microphone.ico" />
+    <EmbeddedResource Include="Resources\Icons\microphone_active.ico" />
+  </ItemGroup>
+
+</Project>

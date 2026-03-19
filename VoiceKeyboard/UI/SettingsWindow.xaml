@@ -1,0 +1,196 @@
+<Window x:Class="VoiceKeyboard.UI.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Akoway — Settings"
+        Width="520" Height="620"
+        ResizeMode="NoResize"
+        WindowStartupLocation="CenterScreen"
+        Background="#F3F3F3">
+
+    <Window.Resources>
+        <Style x:Key="SectionHeader" TargetType="TextBlock">
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Foreground" Value="#1A1A2E"/>
+            <Setter Property="Margin" Value="0,16,0,6"/>
+        </Style>
+        <Style x:Key="Card" TargetType="Border">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="16"/>
+            <Setter Property="Margin" Value="0,0,0,8"/>
+            <Setter Property="Effect">
+                <Setter.Value>
+                    <DropShadowEffect ShadowDepth="1" BlurRadius="4" Opacity="0.08" Color="Black"/>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style TargetType="Button">
+            <Setter Property="Padding" Value="14,7"/>
+            <Setter Property="Background" Value="#0078D4"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="4"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#006CBE"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <ScrollViewer VerticalScrollBarVisibility="Auto" Grid.Row="0">
+            <StackPanel>
+
+                <!-- ── HOTKEY ── -->
+                <TextBlock Text="Hotkey" Style="{StaticResource SectionHeader}"/>
+                <Border Style="{StaticResource Card}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="Activation Hotkey" FontWeight="Medium"/>
+                            <TextBlock x:Name="TxtHotkeyDisplay" Foreground="#555"
+                                       Margin="0,4,0,0" FontSize="12"/>
+                        </StackPanel>
+                        <Button Grid.Column="1" x:Name="BtnChangeHotkey"
+                                Content="Change…" Click="BtnChangeHotkey_Click"
+                                VerticalAlignment="Center"/>
+                    </Grid>
+                </Border>
+
+                <!-- ── DICTATION MODE ── -->
+                <TextBlock Text="Dictation Mode" Style="{StaticResource SectionHeader}"/>
+                <Border Style="{StaticResource Card}">
+                    <StackPanel>
+                        <RadioButton x:Name="RbToggle" Content="Toggle Mode — press to start, press again to stop"
+                                     GroupName="DictMode" Margin="0,0,0,8" Checked="DictMode_Changed"/>
+                        <RadioButton x:Name="RbPtt" Content="Push-to-Talk — hold hotkey while speaking"
+                                     GroupName="DictMode" Checked="DictMode_Changed"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                            <TextBlock Text="Silence timeout:" VerticalAlignment="Center" Width="120"/>
+                            <Slider x:Name="SliderSilence" Minimum="0.6" Maximum="2.0" TickFrequency="0.1"
+                                    IsSnapToTickEnabled="True" Width="180"
+                                    ValueChanged="SliderSilence_ValueChanged" VerticalAlignment="Center"/>
+                            <TextBlock x:Name="TxtSilenceValue" Margin="8,0,0,0" VerticalAlignment="Center"
+                                       Foreground="#555"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- ── MODEL ── -->
+                <TextBlock Text="Speech Model" Style="{StaticResource SectionHeader}"/>
+                <Border Style="{StaticResource Card}">
+                    <StackPanel>
+                        <Grid Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <ComboBox x:Name="CmbModel" SelectionChanged="CmbModel_SelectionChanged"
+                                      VerticalAlignment="Center"/>
+                            <Button Grid.Column="1" x:Name="BtnBenchmark" Content="Test Model"
+                                    Margin="8,0,0,0" Click="BtnBenchmark_Click" VerticalAlignment="Center"/>
+                        </Grid>
+
+                        <!-- Model list with download buttons -->
+                        <ItemsControl x:Name="ModelList">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Margin="0,4">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding DisplayName}" FontSize="12"/>
+                                            <TextBlock Text="{Binding StatusText}" Foreground="#777" FontSize="11"/>
+                                        </StackPanel>
+                                        <Button Grid.Column="1" Content="Download"
+                                                Visibility="{Binding DownloadBtnVisibility}"
+                                                Tag="{Binding Size}"
+                                                Click="BtnDownload_Click" Margin="4,0" Padding="8,4"
+                                                Background="#0078D4"/>
+                                        <Button Grid.Column="2" Content="Delete"
+                                                Visibility="{Binding DeleteBtnVisibility}"
+                                                Tag="{Binding Size}"
+                                                Click="BtnDeleteModel_Click" Padding="8,4"
+                                                Background="#D32F2F"/>
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <!-- Download progress -->
+                        <StackPanel x:Name="PanelProgress" Visibility="Collapsed" Margin="0,10,0,0">
+                            <TextBlock x:Name="TxtDownloadStatus" FontSize="12" Foreground="#555"/>
+                            <ProgressBar x:Name="PbDownload" Height="6" Margin="0,6,0,0"
+                                         Minimum="0" Maximum="100"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- ── GPU & INJECTION ── -->
+                <TextBlock Text="Performance" Style="{StaticResource SectionHeader}"/>
+                <Border Style="{StaticResource Card}">
+                    <StackPanel>
+                        <CheckBox x:Name="ChkGpu" Content="Enable GPU acceleration (CUDA — RTX 3050)"
+                                  Margin="0,0,0,10" Checked="ChkGpu_Changed" Unchecked="ChkGpu_Changed"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="140"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Text injection:" VerticalAlignment="Center"/>
+                            <ComboBox x:Name="CmbInjection" Grid.Column="1"
+                                      SelectionChanged="CmbInjection_SelectionChanged">
+                                <ComboBoxItem Content="Auto (SendInput → Clipboard fallback)" Tag="Auto"/>
+                                <ComboBoxItem Content="Always SendInput (keystrokes)" Tag="Keystroke"/>
+                                <ComboBoxItem Content="Always Clipboard paste" Tag="Clipboard"/>
+                            </ComboBox>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- ── SYSTEM ── -->
+                <TextBlock Text="System" Style="{StaticResource SectionHeader}"/>
+                <Border Style="{StaticResource Card}">
+                    <StackPanel>
+                        <CheckBox x:Name="ChkStartup" Content="Launch on Windows startup"
+                                  Margin="0,0,0,8" Checked="ChkStartup_Changed" Unchecked="ChkStartup_Changed"/>
+                        <CheckBox x:Name="ChkNotifications" Content="Show tray balloon notifications"
+                                  Checked="ChkNotifications_Changed" Unchecked="ChkNotifications_Changed"/>
+                    </StackPanel>
+                </Border>
+
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- ── FOOTER BUTTONS ── -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+            <Button Content="Cancel" Background="#E0E0E0" Foreground="#333"
+                    Click="BtnCancel_Click" Margin="0,0,8,0"/>
+            <Button Content="Save" Click="BtnSave_Click"/>
+        </StackPanel>
+
+    </Grid>
+</Window>

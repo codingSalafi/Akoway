@@ -1,0 +1,30 @@
+# Build output
+bin/
+obj/
+publish/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Rider
+.idea/
+
+# NuGet
+*.nupkg
+packages/
+.nuget/
+
+# Whisper model files (downloaded by app on first run)
+*.bin
+*.gguf
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
