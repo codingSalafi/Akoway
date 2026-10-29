@@ -9,7 +9,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>Akoway</AssemblyName>
     <RootNamespace>VoiceKeyboard</RootNamespace>
-    <Version>1.1.0</Version>
+    <Version>2.0.0</Version>
     <Company>Akoway</Company>
     <Description>Akoway — Free Offline Voice Dictation for Windows</Description>
     <ApplicationIcon>Resources\Icons\akoway.ico</ApplicationIcon>
