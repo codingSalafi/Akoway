@@ -4,48 +4,51 @@ using VoiceKeyboard.Models;
 namespace VoiceKeyboard.Services;
 
 /// <summary>
-/// Manages local Whisper model files: listing, downloading, deleting,
+/// Manages local speech model folders: listing, downloading, deleting,
 /// and providing paths to the active model.
 /// </summary>
 public sealed class ModelManager
 {
+    private static readonly Dictionary<SpeechModel, string> FolderNames = new()
+    {
+        [SpeechModel.BarkPro] = "bark-3.0-pro",
+    };
+
     private readonly SettingsService _settings;
 
     public ModelManager(SettingsService settings)
     {
         _settings = settings;
         Directory.CreateDirectory(settings.Settings.ModelsDirectory);
+        DeleteWhisperModels();
     }
 
     public string ModelsDirectory => _settings.Settings.ModelsDirectory;
 
-    public string GetModelPath(WhisperModelSize size)
-        => WhisperModelDownloader.GetModelPath(size, ModelsDirectory);
+    public string GetModelPath(SpeechModel model)
+        => Path.Combine(ModelsDirectory, FolderNames[model]);
 
     public string GetActiveModelPath()
         => GetModelPath(_settings.Settings.ActiveModel);
 
-    public bool IsDownloaded(WhisperModelSize size)
-        => WhisperModelDownloader.IsDownloaded(size, ModelsDirectory);
+    public bool IsDownloaded(SpeechModel model)
+        => BarkModelDownloader.IsDownloaded(GetModelPath(model));
 
     public IReadOnlyList<ModelInfo> GetAllModels()
     {
-        return new[]
+        return Enum.GetValues<SpeechModel>()
+        .Select(model =>
         {
-            WhisperModelSize.BaseEn,
-            WhisperModelSize.SmallEn,
-            WhisperModelSize.MediumEn
-        }
-        .Select(size =>
-        {
-            var path = GetModelPath(size);
-            bool exists = File.Exists(path);
+            var path = GetModelPath(model);
+            bool exists = IsDownloaded(model);
             return new ModelInfo
             {
-                Size = size,
-                FileName = WhisperModelDownloader.GetFileName(size),
+                Model = model,
+                FileName = FolderNames[model],
                 IsDownloaded = exists,
-                FileSizeBytes = exists ? new FileInfo(path).Length : 0
+                FileSizeBytes = exists
+                    ? new DirectoryInfo(path).EnumerateFiles().Sum(f => f.Length)
+                    : 0
             };
         })
         .ToList();
@@ -53,34 +56,32 @@ public sealed class ModelManager
 
     /// <summary>
     /// Download a model with progress reporting.
-    /// Progress value = bytes downloaded so far.
+    /// Progress value = percent complete (0–100).
     /// </summary>
     public async Task DownloadModelAsync(
-        WhisperModelSize size,
+        SpeechModel model,
         IProgress<double>? progress = null,
         CancellationToken ct = default)
     {
-        await WhisperModelDownloader.DownloadAsync(size, ModelsDirectory, progress, ct);
+        await BarkModelDownloader.DownloadAsync(GetModelPath(model), progress, ct);
     }
 
-    public void DeleteModel(WhisperModelSize size)
+    public void DeleteModel(SpeechModel model)
     {
-        var path = GetModelPath(size);
-        if (File.Exists(path)) File.Delete(path);
+        var path = GetModelPath(model);
+        if (Directory.Exists(path)) Directory.Delete(path, recursive: true);
     }
 
     /// <summary>
-    /// Suggest the best model based on available GPU VRAM.
-    /// Falls back to base.en if nothing else is usable.
+    /// Earlier versions of Akoway used Whisper (ggml-*.bin). Those files can't be
+    /// used any more, so free the space (up to ~1.5 GB each).
     /// </summary>
-    public WhisperModelSize SuggestBestModel()
+    private void DeleteWhisperModels()
     {
-        // Heuristic: read VRAM via NVML or just use a safe default.
-        // small.en fits easily in 4 GB; medium.en is borderline.
-        if (IsDownloaded(WhisperModelSize.SmallEn))
-            return WhisperModelSize.SmallEn;
-        if (IsDownloaded(WhisperModelSize.BaseEn))
-            return WhisperModelSize.BaseEn;
-        return WhisperModelSize.SmallEn; // will prompt download
+        foreach (var file in Directory.EnumerateFiles(ModelsDirectory, "ggml-*.bin*"))
+        {
+            try { File.Delete(file); }
+            catch { /* in use or read-only — leave it */ }
+        }
     }
 }

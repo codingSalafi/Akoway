@@ -1,7 +1,7 @@
 namespace VoiceKeyboard.Core;
 
 /// <summary>
-/// Post-processes raw Whisper transcript into final text + a list of editing
+/// Post-processes raw speech-model transcript into final text + a list of editing
 /// actions to perform before/after text injection.
 ///
 /// Rules:

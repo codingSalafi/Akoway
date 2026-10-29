@@ -16,10 +16,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- STT Engine: C# wrapper around whisper.cpp with CUDA support -->
-    <PackageReference Include="Whisper.net" Version="1.7.3" />
-    <PackageReference Include="Whisper.net.Runtime" Version="1.7.3" />
-    <PackageReference Include="Whisper.net.Runtime.Cuda" Version="1.7.3" />
+    <!-- STT Engine: ONNX Runtime (CPU) for Bark 3.0 Pro -->
+    <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.31.1" />
 
     <!-- Audio capture -->
     <PackageReference Include="NAudio" Version="2.2.1" />

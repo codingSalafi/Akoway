@@ -18,9 +18,12 @@ publish/
 packages/
 .nuget/
 
-# Whisper model files (downloaded by app on first run)
+# Model files (downloaded by the app on first run, never committed)
 *.bin
 *.gguf
+*.onnx
+*.onnx.data
+*.safetensors
 
 # OS
 .DS_Store

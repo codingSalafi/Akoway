@@ -52,7 +52,7 @@ public partial class App : Application
                 }
             }
 
-            // 4. Dictation engine (audio → whisper → inject)
+            // 4. Dictation engine (audio → Bark → inject)
             _dictationController = new DictationController(_settingsService, _modelManager);
             _dictationController.StateChanged += OnDictationStateChanged;
             _dictationController.TranscriptReady += OnTranscriptReady;

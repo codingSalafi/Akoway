@@ -1,0 +1,10 @@
+# Install torch first from the CPU index:
+#   pip install torch --index-url https://download.pytorch.org/whl/cpu
+transformers>=5.19
+onnx
+onnxruntime
+tokenizers
+librosa
+soundfile
+numpy
+jiwer

@@ -6,8 +6,8 @@ namespace VoiceKeyboard.Core;
 /// <summary>
 /// Orchestrates the full dictation pipeline:
 ///
-///   Hotkey → AudioCapture → VAD → WhisperEngine → VoiceCommandProcessor
-///                                                → TextInjector
+///   Hotkey → AudioCapture → VAD → BarkEngine → VoiceCommandProcessor
+///                                              → TextInjector
 ///
 /// State machine:
 ///   Idle ──(toggle/PTT press)──► Listening
@@ -22,7 +22,7 @@ public sealed class DictationController : IDisposable
 
     private readonly AudioCapture _audio = new();
     private readonly VadDetector _vad = new();
-    private readonly WhisperEngine _whisper = new();
+    private readonly BarkEngine _engine = new();
     private readonly VoiceCommandProcessor _commandProcessor = new();
     private TextInjector _injector;
 
@@ -61,7 +61,7 @@ public sealed class DictationController : IDisposable
         _vad.SilenceTimeoutMs = s.SilenceTimeoutSeconds * 1000;
 
         string modelPath = _modelManager.GetModelPath(s.ActiveModel);
-        if (!File.Exists(modelPath))
+        if (!_modelManager.IsDownloaded(s.ActiveModel))
         {
             SetStatus(DictationStatus.Error, $"Model not found: {Path.GetFileName(modelPath)}");
             return;
@@ -69,7 +69,7 @@ public sealed class DictationController : IDisposable
 
         try
         {
-            await _whisper.LoadModelAsync(modelPath, s.UseGpu, s.GpuDevice);
+            await _engine.LoadModelAsync(modelPath);
         }
         catch (Exception ex)
         {
@@ -90,7 +90,7 @@ public sealed class DictationController : IDisposable
     public void StartDictation()
     {
         if (_status != DictationStatus.Idle) return;
-        if (!_whisper.IsReady)
+        if (!_engine.IsReady)
         {
             HandleError("Model not loaded. Check Settings → Models.");
             return;
@@ -153,7 +153,7 @@ public sealed class DictationController : IDisposable
         try
         {
             var ct = _cts?.Token ?? CancellationToken.None;
-            string raw = await _whisper.TranscribeAsync(samples, ct);
+            string raw = await _engine.TranscribeAsync(samples, ct);
 
             if (string.IsNullOrWhiteSpace(raw))
             {
@@ -202,9 +202,9 @@ public sealed class DictationController : IDisposable
 
     public async Task<BenchmarkResult> RunBenchmarkAsync(float[] audioSamples)
     {
-        if (!_whisper.IsReady)
+        if (!_engine.IsReady)
             throw new InvalidOperationException("Model not loaded.");
-        return await _whisper.BenchmarkAsync(audioSamples);
+        return await _engine.BenchmarkAsync(audioSamples);
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
@@ -234,6 +234,6 @@ public sealed class DictationController : IDisposable
         _disposed = true;
         _cts?.Cancel();
         _audio.Dispose();
-        _whisper.Dispose();
+        _engine.Dispose();
     }
 }

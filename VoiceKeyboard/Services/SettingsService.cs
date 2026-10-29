@@ -33,6 +33,10 @@ public sealed class SettingsService
                 var loaded = await JsonSerializer.DeserializeAsync<AppSettings>(fs, JsonOptions);
                 if (loaded != null) Settings = loaded;
             }
+
+            // Settings from the Whisper era store a model this version doesn't have
+            if (!Enum.IsDefined(Settings.ActiveModel))
+                Settings.ActiveModel = SpeechModel.BarkPro;
         }
         catch
         {

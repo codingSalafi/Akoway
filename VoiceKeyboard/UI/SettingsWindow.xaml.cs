@@ -41,8 +41,6 @@ public partial class SettingsWindow : Window
             SilenceTimeoutSeconds = s.SilenceTimeoutSeconds,
             ActiveModel = s.ActiveModel,
             ModelsDirectory = s.ModelsDirectory,
-            UseGpu = s.UseGpu,
-            GpuDevice = s.GpuDevice,
             InjectionMethod = s.InjectionMethod,
             KeystrokeDelayMs = s.KeystrokeDelayMs,
             LaunchOnStartup = s.LaunchOnStartup,
@@ -62,14 +60,11 @@ public partial class SettingsWindow : Window
 
         // Models
         RefreshModelList();
-        CmbModel.ItemsSource = Enum.GetValues<WhisperModelSize>()
+        CmbModel.ItemsSource = Enum.GetValues<SpeechModel>()
             .Select(m => new { Value = m, Name = ModelDisplayName(m) }).ToList();
         CmbModel.DisplayMemberPath = "Name";
         CmbModel.SelectedValuePath = "Value";
         CmbModel.SelectedValue = _draft.ActiveModel;
-
-        // GPU
-        ChkGpu.IsChecked = _draft.UseGpu;
 
         // Injection method
         for (int i = 0; i < CmbInjection.Items.Count; i++)
@@ -99,33 +94,31 @@ public partial class SettingsWindow : Window
 
     private async void BtnDownload_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is not Button btn || btn.Tag is not WhisperModelSize size) return;
+        if (sender is not Button btn || btn.Tag is not SpeechModel model) return;
 
         _downloadCts = new CancellationTokenSource();
         PanelProgress.Visibility = Visibility.Visible;
         btn.IsEnabled = false;
-        TxtDownloadStatus.Text = $"Downloading {ModelDisplayName(size)}…";
-        PbDownload.IsIndeterminate = true;
+        TxtDownloadStatus.Text = $"Downloading {ModelDisplayName(model)}…";
+        PbDownload.Value = 0;
 
         try
         {
-            var progress = new Progress<double>(bytes =>
+            var progress = new Progress<double>(pct =>
             {
-                Dispatcher.Invoke(() =>
-                {
-                    TxtDownloadStatus.Text = $"Downloading {ModelDisplayName(size)}… {bytes / 1_000_000:0.0} MB";
-                });
+                PbDownload.Value = pct;
+                TxtDownloadStatus.Text = $"Downloading {ModelDisplayName(model)}… {pct:0}%";
             });
 
-            await _modelManager.DownloadModelAsync(size, progress, _downloadCts.Token);
-            TxtDownloadStatus.Text = $"✓ {ModelDisplayName(size)} downloaded. Loading model…";
+            await _modelManager.DownloadModelAsync(model, progress, _downloadCts.Token);
+            TxtDownloadStatus.Text = $"✓ {ModelDisplayName(model)} downloaded. Loading model…";
 
             // Auto-select and load the model that was just downloaded
-            _draft.ActiveModel = size;
-            CmbModel.SelectedValue = size;
-            _settings.Settings.ActiveModel = size;
+            _draft.ActiveModel = model;
+            CmbModel.SelectedValue = model;
+            _settings.Settings.ActiveModel = model;
             await _dictation.ReloadModelAsync();
-            TxtDownloadStatus.Text = $"✓ {ModelDisplayName(size)} ready to use!";
+            TxtDownloadStatus.Text = $"✓ {ModelDisplayName(model)} ready to use!";
         }
         catch (OperationCanceledException)
         {
@@ -137,7 +130,6 @@ public partial class SettingsWindow : Window
         }
         finally
         {
-            PbDownload.IsIndeterminate = false;
             btn.IsEnabled = true;
             RefreshModelList();
 
@@ -148,21 +140,21 @@ public partial class SettingsWindow : Window
 
     private void BtnDeleteModel_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is not Button btn || btn.Tag is not WhisperModelSize size) return;
+        if (sender is not Button btn || btn.Tag is not SpeechModel model) return;
 
-        if (size == _draft.ActiveModel)
+        if (model == _draft.ActiveModel)
         {
             MessageBox.Show("Cannot delete the currently active model.", "Akoway",
                 MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
 
-        var result = MessageBox.Show($"Delete {ModelDisplayName(size)}?", "Confirm Delete",
+        var result = MessageBox.Show($"Delete {ModelDisplayName(model)}?", "Confirm Delete",
             MessageBoxButton.YesNo, MessageBoxImage.Question);
 
         if (result == MessageBoxResult.Yes)
         {
-            _modelManager.DeleteModel(size);
+            _modelManager.DeleteModel(model);
             RefreshModelList();
         }
     }
@@ -202,13 +194,8 @@ public partial class SettingsWindow : Window
 
     private void CmbModel_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (CmbModel.SelectedValue is WhisperModelSize size)
-            _draft.ActiveModel = size;
-    }
-
-    private void ChkGpu_Changed(object sender, RoutedEventArgs e)
-    {
-        _draft.UseGpu = ChkGpu.IsChecked == true;
+        if (CmbModel.SelectedValue is SpeechModel model)
+            _draft.ActiveModel = model;
     }
 
     private void CmbInjection_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -236,8 +223,7 @@ public partial class SettingsWindow : Window
             _settings.Settings.HotkeyModifiers != _draft.HotkeyModifiers ||
             _settings.Settings.HotkeyVirtualKey != _draft.HotkeyVirtualKey;
 
-        bool modelChanged = _settings.Settings.ActiveModel != _draft.ActiveModel ||
-                            _settings.Settings.UseGpu != _draft.UseGpu;
+        bool modelChanged = _settings.Settings.ActiveModel != _draft.ActiveModel;
 
         // Apply draft → settings
         ApplyDraft();
@@ -261,8 +247,6 @@ public partial class SettingsWindow : Window
         s.Mode = _draft.Mode;
         s.SilenceTimeoutSeconds = _draft.SilenceTimeoutSeconds;
         s.ActiveModel = _draft.ActiveModel;
-        s.UseGpu = _draft.UseGpu;
-        s.GpuDevice = _draft.GpuDevice;
         s.InjectionMethod = _draft.InjectionMethod;
         s.LaunchOnStartup = _draft.LaunchOnStartup;
         s.ShowTrayNotifications = _draft.ShowTrayNotifications;
@@ -292,12 +276,10 @@ public partial class SettingsWindow : Window
         _ => $"0x{vk:X2}"
     };
 
-    private static string ModelDisplayName(WhisperModelSize size) => size switch
+    private static string ModelDisplayName(SpeechModel model) => model switch
     {
-        WhisperModelSize.BaseEn   => "base.en — Fast",
-        WhisperModelSize.SmallEn  => "small.en — Balanced (Default)",
-        WhisperModelSize.MediumEn => "medium.en — High Accuracy",
-        _ => size.ToString()
+        SpeechModel.BarkPro => "Bark 3.0 Pro",
+        _ => model.ToString()
     };
 }
 
@@ -310,7 +292,7 @@ public class ModelListItem
     public ModelListItem(ModelInfo model) => _model = model;
 
     public string DisplayName => _model.DisplayName;
-    public WhisperModelSize Size => _model.Size;
+    public SpeechModel Model => _model.Model;
     public string StatusText => _model.IsDownloaded
         ? $"Downloaded — {_model.FileSizeBytes / 1_000_000} MB"
         : "Not downloaded";

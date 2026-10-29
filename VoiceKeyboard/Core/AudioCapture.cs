@@ -4,11 +4,11 @@ namespace VoiceKeyboard.Core;
 
 /// <summary>
 /// Captures microphone audio using NAudio, resamples to 16 kHz mono float[]
-/// as required by whisper.cpp.
+/// as required by the speech model.
 /// </summary>
 public sealed class AudioCapture : IDisposable
 {
-    // Whisper requires 16 kHz, 16-bit, mono
+    // The speech model requires 16 kHz, 16-bit, mono
     private const int SampleRate = 16000;
     private const int BitsPerSample = 16;
     private const int Channels = 1;

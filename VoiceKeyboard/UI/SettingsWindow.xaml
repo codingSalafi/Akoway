@@ -127,12 +127,12 @@
                                         </StackPanel>
                                         <Button Grid.Column="1" Content="Download"
                                                 Visibility="{Binding DownloadBtnVisibility}"
-                                                Tag="{Binding Size}"
+                                                Tag="{Binding Model}"
                                                 Click="BtnDownload_Click" Margin="4,0" Padding="8,4"
                                                 Background="#0078D4"/>
                                         <Button Grid.Column="2" Content="Delete"
                                                 Visibility="{Binding DeleteBtnVisibility}"
-                                                Tag="{Binding Size}"
+                                                Tag="{Binding Model}"
                                                 Click="BtnDeleteModel_Click" Padding="8,4"
                                                 Background="#D32F2F"/>
                                     </Grid>
@@ -149,12 +149,10 @@
                     </StackPanel>
                 </Border>
 
-                <!-- ── GPU & INJECTION ── -->
+                <!-- ── INJECTION ── -->
                 <TextBlock Text="Performance" Style="{StaticResource SectionHeader}"/>
                 <Border Style="{StaticResource Card}">
                     <StackPanel>
-                        <CheckBox x:Name="ChkGpu" Content="Enable GPU acceleration (CUDA — RTX 3050)"
-                                  Margin="0,0,0,10" Checked="ChkGpu_Changed" Unchecked="ChkGpu_Changed"/>
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="140"/>

@@ -21,16 +21,12 @@ public class AppSettings
     /// <summary>Seconds of silence before auto-stopping. Range 0.6 – 2.0.</summary>
     public double SilenceTimeoutSeconds { get; set; } = 1.0;
 
-    // ── Whisper Model ─────────────────────────────────────────────────────────
-    public WhisperModelSize ActiveModel { get; set; } = WhisperModelSize.SmallEn;
+    // ── Speech Model ──────────────────────────────────────────────────────────
+    public SpeechModel ActiveModel { get; set; } = SpeechModel.BarkPro;
     /// <summary>Where to store downloaded model files.</summary>
     public string ModelsDirectory { get; set; } =
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
                      "Akoway", "Models");
-
-    // ── GPU ───────────────────────────────────────────────────────────────────
-    public bool UseGpu { get; set; } = true;
-    public int GpuDevice { get; set; } = 0;
 
     // ── Text Injection ────────────────────────────────────────────────────────
     public InjectionMethod InjectionMethod { get; set; } = InjectionMethod.Auto;
@@ -48,11 +44,9 @@ public enum DictationMode
     PushToTalk
 }
 
-public enum WhisperModelSize
+public enum SpeechModel
 {
-    BaseEn,
-    SmallEn,
-    MediumEn
+    BarkPro     // Underdog Bark 3.0 Pro
 }
 
 public enum InjectionMethod

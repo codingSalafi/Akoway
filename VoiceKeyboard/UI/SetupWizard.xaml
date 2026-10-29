@@ -51,82 +51,38 @@
                            FontSize="20" FontWeight="Bold" Foreground="#0D0D0D"/>
                 <TextBlock Margin="0,7,0,0" FontSize="13" Foreground="#333333"
                            TextWrapping="Wrap"
-                           Text="Download a speech recognition model to get started.&#x0a;Models run fully offline — no internet required after download."/>
+                           Text="Download the speech recognition model to get started.&#x0a;It runs fully offline — no internet required after download."/>
             </StackPanel>
         </Border>
 
-        <!-- ── Model cards ─────────────────────────────────────────────────── -->
+        <!-- ── Model card ──────────────────────────────────────────────────── -->
         <StackPanel Margin="24,20,24,0">
-            <TextBlock Text="Choose a model" FontSize="14" FontWeight="SemiBold"
+            <TextBlock Text="Speech model" FontSize="14" FontWeight="SemiBold"
                        Foreground="#0D0D0D" Margin="0,0,0,12"/>
 
-            <!-- Base -->
-            <Border x:Name="CardBase" CornerRadius="10" Background="White"
-                    BorderThickness="1.5" BorderBrush="#DDDDDD"
-                    Padding="16,13" Margin="0,0,0,10" Cursor="Hand"
-                    MouseLeftButtonDown="CardBase_Click">
-                <StackPanel Orientation="Horizontal">
-                    <RadioButton x:Name="RbBase" GroupName="Model"
-                                 VerticalAlignment="Center" Margin="0,0,14,0"
-                                 Checked="Radio_Checked"/>
-                    <StackPanel>
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="Base" FontSize="14" FontWeight="SemiBold"/>
-                            <TextBlock Text=" · 142 MB" FontSize="13" Foreground="#777" VerticalAlignment="Center"/>
-                        </StackPanel>
-                        <TextBlock Text="Fastest. Decent accuracy — good for quick notes."
-                                   FontSize="12" Foreground="#555" Margin="0,4,0,0"/>
-                    </StackPanel>
-                </StackPanel>
-            </Border>
-
-            <!-- Small — default -->
-            <Border x:Name="CardSmall" CornerRadius="10" Background="White"
+            <Border x:Name="CardBark" CornerRadius="10" Background="White"
                     BorderThickness="2" BorderBrush="#8ED020"
-                    Padding="16,13" Margin="0,0,0,10" Cursor="Hand"
-                    MouseLeftButtonDown="CardSmall_Click">
+                    Padding="16,13">
                 <Grid>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <RadioButton x:Name="RbSmall" GroupName="Model" IsChecked="True"
-                                 VerticalAlignment="Center" Margin="0,0,14,0"
-                                 Checked="Radio_Checked"/>
-                    <StackPanel Grid.Column="1">
+                    <StackPanel>
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="Small" FontSize="14" FontWeight="SemiBold"/>
-                            <TextBlock Text=" · 244 MB" FontSize="13" Foreground="#777" VerticalAlignment="Center"/>
+                            <TextBlock Text="Bark 3.0 Pro" FontSize="14" FontWeight="SemiBold"/>
+                            <TextBlock Text=" · 910 MB" FontSize="13" Foreground="#777" VerticalAlignment="Center"/>
                         </StackPanel>
-                        <TextBlock Text="Great accuracy with fast transcription. Best for most users."
-                                   FontSize="12" Foreground="#555" Margin="0,4,0,0"/>
+                        <TextBlock Text="Highly accurate, with punctuation and capitals. Runs fast on any modern CPU — no GPU needed."
+                                   FontSize="12" Foreground="#555" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                        <TextBlock Text="By Underdog (Conway Research) · CC-BY 4.0"
+                                   FontSize="11" Foreground="#888" Margin="0,4,0,0"/>
                     </StackPanel>
-                    <Border Grid.Column="2" Background="#C9FE68" CornerRadius="6"
+                    <Border Grid.Column="1" Background="#C9FE68" CornerRadius="6"
                             Padding="8,3" VerticalAlignment="Center" Margin="10,0,0,0">
                         <TextBlock Text="Recommended" FontSize="11" FontWeight="SemiBold"/>
                     </Border>
                 </Grid>
-            </Border>
-
-            <!-- Medium -->
-            <Border x:Name="CardMedium" CornerRadius="10" Background="White"
-                    BorderThickness="1.5" BorderBrush="#DDDDDD"
-                    Padding="16,13" Margin="0,0,0,0" Cursor="Hand"
-                    MouseLeftButtonDown="CardMedium_Click">
-                <StackPanel Orientation="Horizontal">
-                    <RadioButton x:Name="RbMedium" GroupName="Model"
-                                 VerticalAlignment="Center" Margin="0,0,14,0"
-                                 Checked="Radio_Checked"/>
-                    <StackPanel>
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="Medium" FontSize="14" FontWeight="SemiBold"/>
-                            <TextBlock Text=" · 769 MB" FontSize="13" Foreground="#777" VerticalAlignment="Center"/>
-                        </StackPanel>
-                        <TextBlock Text="Highest accuracy. Best paired with a GPU (slower on CPU-only)."
-                                   FontSize="12" Foreground="#555" Margin="0,4,0,0"/>
-                    </StackPanel>
-                </StackPanel>
             </Border>
 
         </StackPanel>

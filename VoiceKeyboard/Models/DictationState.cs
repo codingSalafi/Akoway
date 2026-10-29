@@ -25,14 +25,12 @@ public class ModelInfo
 {
     public string Name { get; set; } = "";
     public string FileName { get; set; } = "";
-    public WhisperModelSize Size { get; set; }
+    public SpeechModel Model { get; set; }
     public long FileSizeBytes { get; set; }
     public bool IsDownloaded { get; set; }
-    public string DisplayName => Size switch
+    public string DisplayName => Model switch
     {
-        WhisperModelSize.BaseEn   => "base.en  (~75 MB)  — Fast",
-        WhisperModelSize.SmallEn  => "small.en (~242 MB) — Balanced (Default)",
-        WhisperModelSize.MediumEn => "medium.en (~1.5 GB) — High Accuracy",
+        SpeechModel.BarkPro => "Bark 3.0 Pro (~910 MB) — Underdog",
         _ => Name
     };
 }

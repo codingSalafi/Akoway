@@ -106,7 +106,7 @@ public partial class BenchmarkDialog : Window
 
         TxtLatency.Text = $"{result.LatencyMs:0}ms";
         TxtRtf.Text = $"{result.RealTimeFactor:0.00}x";
-        TxtDevice.Text = result.IsGpu ? "GPU (CUDA)" : "CPU";
+        TxtDevice.Text = "CPU";
         TxtTranscript.Text = string.IsNullOrWhiteSpace(result.Transcript)
             ? "(no speech detected)"
             : $"\"{result.Transcript}\"";
