@@ -120,9 +120,8 @@
                 <!-- ── Status text ───────────────────────────────────── -->
                 <TextBlock x:Name="StatusText"
                            Text="Press hotkey or click mic icon to start"
-                           FontFamily="Inter, Segoe UI Variable Display, Segoe UI"
-                           FontSize="22"
-                           FontWeight="Medium"
+                           FontFamily="pack://application:,,,/Akoway;component/Resources/Fonts/#Instrument Serif, Segoe UI"
+                           FontSize="26"
                            Foreground="#0D0D0D"
                            VerticalAlignment="Center"/>
 

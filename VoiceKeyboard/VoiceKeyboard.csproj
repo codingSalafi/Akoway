@@ -29,6 +29,8 @@
   <ItemGroup>
     <!-- App branding icon (exe/installer) -->
     <Resource Include="Resources\Icons\akoway.ico" />
+    <!-- Overlay font (SIL Open Font License, see Resources\Fonts\OFL.txt) -->
+    <Resource Include="Resources\Fonts\InstrumentSerif-Regular.ttf" />
     <!-- Tray state icons — embedded so they work in self-contained publish -->
     <EmbeddedResource Include="Resources\Icons\microphone.ico" />
     <EmbeddedResource Include="Resources\Icons\microphone_active.ico" />
