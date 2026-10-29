@@ -13,10 +13,11 @@ namespace VoiceKeyboard.UI;
 ///
 /// Behaviour:
 ///   • Appears (fade in) when the hotkey is pressed.
-///   • Updates its appearance as dictation progresses.
-///   • Fades out automatically after text is injected (returns to idle).
+///   • Updates its appearance as dictation progresses:
+///       idle → listening → processing → writing → idle  (error shows a message below)
 ///   • Can be dragged anywhere on screen.
-///   • Clicking the pill also toggles dictation.
+///   • Clicking the pill toggles dictation.
+///   • The close button cancels any recording without typing anything, then hides.
 /// </summary>
 public partial class OverlayWindow : Window
 {
@@ -61,32 +62,39 @@ public partial class OverlayWindow : Window
 
     public void HideOverlay() => FadeOut();
 
-    public void UpdateState(DictationStatus status)
+    /// <param name="message">For <see cref="DictationStatus.Error"/>: what went wrong.</param>
+    public void UpdateState(DictationStatus status, string? message = null)
     {
         Dispatcher.Invoke(() =>
         {
+            StopAnimations();
+            ErrorLabel.Visibility = Visibility.Collapsed;
+
             switch (status)
             {
                 case DictationStatus.Idle:
-                    ApplyIdleVisual();
+                    ApplyMicVisual(BgIdle, CircleIdle, IconOnIdle);
                     break;
 
                 case DictationStatus.Listening:
-                    ApplyListeningVisual();
+                    ApplyMicVisual(BgActive, CircleActive, IconOnActive);
+                    RecordDot.Visibility = Visibility.Visible;
+                    ((Storyboard)Resources["PulseAnim"]).Begin(this, true);
                     break;
 
                 case DictationStatus.Processing:
-                    ApplyProcessingVisual();
+                    ShowIcon(ProcessingIcon, BgActive, CircleActive);
+                    ((Storyboard)Resources["SpinAnim"]).Begin(this, true);
                     break;
 
                 case DictationStatus.Injecting:
-                    OuterPill.Background = BgProcessing;
-                    StatusText.Text = "Inserting…";
-                    StatusText.Foreground = Brush(0x0D, 0x0D, 0x0D);
+                    ShowIcon(WritingIcon, BgActive, CircleWriting);
                     break;
 
                 case DictationStatus.Error:
-                    ApplyErrorVisual();
+                    ApplyMicVisual(BgError, CircleIdle, IconOnIdle);
+                    ErrorText.Text = string.IsNullOrWhiteSpace(message) ? "Something went wrong — try again" : message;
+                    ErrorLabel.Visibility = Visibility.Visible;
                     break;
             }
         });
@@ -97,75 +105,46 @@ public partial class OverlayWindow : Window
     private static System.Windows.Media.SolidColorBrush Brush(byte r, byte g, byte b)
         => new(System.Windows.Media.Color.FromRgb(r, g, b));
 
-    // Outer-pill background colours that encode state (matching SVG spec)
-    private static readonly System.Windows.Media.SolidColorBrush BgIdle       = Brush(0xC9, 0xFE, 0x68); // lime green
-    private static readonly System.Windows.Media.SolidColorBrush BgListening  = Brush(0x06, 0x09, 0x00); // near-black
-    private static readonly System.Windows.Media.SolidColorBrush BgProcessing = Brush(0x22, 0x22, 0x22); // dark charcoal
-    private static readonly System.Windows.Media.SolidColorBrush BgError      = Brush(0xE5, 0x39, 0x35); // red
+    // Colours from the Figma design
+    private static readonly System.Windows.Media.SolidColorBrush BgIdle        = Brush(0xC9, 0xFE, 0x68); // lime
+    private static readonly System.Windows.Media.SolidColorBrush BgActive      = Brush(0x96, 0xE6, 0x00); // stronger lime
+    private static readonly System.Windows.Media.SolidColorBrush BgError       = Brush(0xE5, 0x39, 0x35); // red
+    private static readonly System.Windows.Media.SolidColorBrush CircleIdle    = BgIdle;
+    private static readonly System.Windows.Media.SolidColorBrush CircleActive  = Brush(0x02, 0x87, 0x00); // green
+    private static readonly System.Windows.Media.SolidColorBrush CircleWriting = Brush(0x00, 0x00, 0x00);
+    private static readonly System.Windows.Media.SolidColorBrush IconOnIdle    = CircleActive;
+    private static readonly System.Windows.Media.SolidColorBrush IconOnActive  = Brush(0xE0, 0xFF, 0xA6); // pale lime
 
     // ── Visual states ─────────────────────────────────────────────────────────
 
-    private void ApplyIdleVisual()
+    private void ApplyMicVisual(System.Windows.Media.Brush outer, System.Windows.Media.Brush circle,
+                                System.Windows.Media.Brush icon)
     {
-        StopPulse();
-        OuterPill.Background = BgIdle;
-        StatusText.Text = "Press hotkey or click mic to start";
-        StatusText.Foreground = Brush(0x0D, 0x0D, 0x0D);
-        MicIdle.Visibility = Visibility.Visible;
-        MicActive.Visibility = Visibility.Collapsed;
-        MicProcessing.Visibility = Visibility.Collapsed;
+        ShowIcon(MicIcon, outer, circle);
+        MicBody.Fill = icon;
+        MicStand.Fill = icon;
     }
 
-    private void ApplyListeningVisual()
+    private void ShowIcon(UIElement iconToShow, System.Windows.Media.Brush outer, System.Windows.Media.Brush circle)
     {
-        OuterPill.Background = BgListening;
-        StatusText.Text = "Listening… Press mic to stop.";
-        StatusText.Foreground = Brush(0x0D, 0x0D, 0x0D);
-        MicIdle.Visibility = Visibility.Collapsed;
-        MicActive.Visibility = Visibility.Visible;
-        MicProcessing.Visibility = Visibility.Collapsed;
-        StartPulse();
+        OuterPill.Background = outer;
+        MicCircle.Fill = circle;
+        foreach (var icon in new UIElement[] { MicIcon, ProcessingIcon, WritingIcon })
+            icon.Visibility = icon == iconToShow ? Visibility.Visible : Visibility.Collapsed;
+        RecordDot.Visibility = Visibility.Collapsed;
     }
 
-    private void ApplyProcessingVisual()
-    {
-        StopPulse();
-        OuterPill.Background = BgProcessing;
-        StatusText.Text = "Processing…";
-        StatusText.Foreground = Brush(0x0D, 0x0D, 0x0D);
-        MicIdle.Visibility = Visibility.Collapsed;
-        MicActive.Visibility = Visibility.Collapsed;
-        MicProcessing.Visibility = Visibility.Visible;
-    }
+    // ── Animations ────────────────────────────────────────────────────────────
 
-    private void ApplyErrorVisual()
+    private void StopAnimations()
     {
-        StopPulse();
-        OuterPill.Background = BgError;
-        StatusText.Text = "Error — try again";
-        StatusText.Foreground = Brush(0x0D, 0x0D, 0x0D);
-        MicIdle.Visibility = Visibility.Visible;
-        MicActive.Visibility = Visibility.Collapsed;
-        MicProcessing.Visibility = Visibility.Collapsed;
-    }
-
-    // ── Pulse animation ───────────────────────────────────────────────────────
-
-    private void StartPulse()
-    {
-        var pulse = (Storyboard)Resources["PulseAnim"];
-        pulse.Begin(this, true);
-    }
-
-    private void StopPulse()
-    {
-        try
+        foreach (var key in new[] { "PulseAnim", "SpinAnim" })
         {
-            var pulse = (Storyboard)Resources["PulseAnim"];
-            pulse.Stop(this);
-            RecordDot.Opacity = 1;
+            try { ((Storyboard)Resources[key]).Stop(this); }
+            catch { /* may not be running */ }
         }
-        catch { /* may not be running */ }
+        RecordDot.Opacity = 1;
+        SpinnerRotate.Angle = 0;
     }
 
     // ── Fade helpers ──────────────────────────────────────────────────────────
@@ -187,7 +166,7 @@ public partial class OverlayWindow : Window
         if (e.LeftButton != MouseButtonState.Pressed) return;
         _mouseDownPos = e.GetPosition(this);
         _isDragging = false;
-        // Capture on the Border element so MouseMove keeps firing while over it
+        // Capture on the pill so MouseMove keeps firing while over it
         ((UIElement)sender).CaptureMouse();
     }
 
@@ -223,12 +202,13 @@ public partial class OverlayWindow : Window
 
     private void OnCloseMouseDown(object sender, MouseButtonEventArgs e)
     {
-        e.Handled = true; // stop bubbling so OuterPill never calls CaptureMouse
+        e.Handled = true; // stop bubbling so the pill never calls CaptureMouse
     }
 
     private void OnCloseClick(object sender, MouseButtonEventArgs e)
     {
-        e.Handled = true; // stop bubbling so OuterPill's OnMouseUp never fires
+        e.Handled = true; // stop bubbling so the pill's OnMouseUp never fires
+        _dictation?.CancelDictation(); // discard any recording — nothing gets typed
         HideOverlay();
     }
 }

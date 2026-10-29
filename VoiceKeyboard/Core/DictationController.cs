@@ -95,13 +95,33 @@ public sealed class DictationController : IDisposable
             HandleError("Model not loaded. Check Settings → Models.");
             return;
         }
+        if (AudioCapture.GetInputDevices().Count == 0)
+        {
+            HandleError("No microphone found. Plug one in or check Windows sound settings.");
+            return;
+        }
 
         lock (_bufferLock) _audioBuffer.Clear();
         _vad.Reset();
         _cts = new CancellationTokenSource();
 
         _audio.Start();
+        if (!_audio.IsCapturing) return; // CaptureError has already reported the problem
         SetStatus(DictationStatus.Listening);
+    }
+
+    /// <summary>
+    /// Stop without transcribing or typing anything (the overlay's close button).
+    /// Also abandons a transcription that is still running.
+    /// </summary>
+    public void CancelDictation()
+    {
+        _cts?.Cancel();
+        _audio.Stop();
+        lock (_bufferLock) _audioBuffer.Clear();
+
+        if (_status is DictationStatus.Listening or DictationStatus.Processing)
+            SetStatus(DictationStatus.Idle);
     }
 
     public void StopDictation()
@@ -154,6 +174,7 @@ public sealed class DictationController : IDisposable
         {
             var ct = _cts?.Token ?? CancellationToken.None;
             string raw = await _engine.TranscribeAsync(samples, ct);
+            ct.ThrowIfCancellationRequested(); // closed while the last frames were decoding
 
             if (string.IsNullOrWhiteSpace(raw))
             {
@@ -220,8 +241,8 @@ public sealed class DictationController : IDisposable
         _audio.Stop();
         ErrorOccurred?.Invoke(this, message);
         SetStatus(DictationStatus.Error, message);
-        // Auto-recover to Idle after a moment
-        Task.Delay(3000).ContinueWith(_ =>
+        // Auto-recover to Idle once there's been time to read the message
+        Task.Delay(6000).ContinueWith(_ =>
         {
             if (_status == DictationStatus.Error)
                 SetStatus(DictationStatus.Idle);

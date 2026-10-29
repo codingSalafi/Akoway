@@ -119,7 +119,7 @@ public partial class App : Application
     {
         Dispatcher.Invoke(() =>
         {
-            _overlay?.UpdateState(e.NewState);
+            _overlay?.UpdateState(e.NewState, e.Message);
             _trayManager?.UpdateState(e.NewState);
         });
     }
