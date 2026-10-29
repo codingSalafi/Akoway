@@ -5,23 +5,25 @@
 ;    1. dotnet publish  (see Build step below)
 ;    2. Inno Setup 6   https://jrsoftware.org/isdl.php
 ;
-;  Build step — run this in the repo root (PowerShell / cmd):
+;  Build step — run this in the repo root (PowerShell / cmd). Publish into an
+;  EMPTY folder: dotnet publish never removes stale files, and this script
+;  packs everything it finds there.
 ;
 ;    dotnet publish VoiceKeyboard\VoiceKeyboard\VoiceKeyboard.csproj ^
 ;      -c Release -r win-x64 --self-contained true ^
 ;      -p:PublishReadyToRun=true ^
-;      -o publish
+;      -o D:\akoway-build\publish
 ;
 ;  Then open this .iss in Inno Setup and press Build → Compile.
-;  The finished installer lands in installer-output\VoiceKeyboard-Setup-v1.0.0.exe
+;  The finished installer lands on the Desktop as Akoway-Setup-v<version>.exe
 ; ─────────────────────────────────────────────────────────────────────────────
 
 #define MyAppName      "Akoway"
-#define MyAppVersion   "1.0.0"
+#define MyAppVersion   "1.1.0"
 #define MyAppPublisher "Akoway"
-#define MyAppURL       "https://github.com/your-username/akoway"
+#define MyAppURL       "https://github.com/codingSalafi/akoway"
 #define MyAppExeName   "Akoway.exe"
-#define MyPublishDir   "C:\Users\Dell\Desktop\VoiceKeyboard-publish"
+#define MyPublishDir   "D:\akoway-build\publish"
 
 ; ── Setup metadata ────────────────────────────────────────────────────────────
 [Setup]
@@ -76,6 +78,12 @@ Name: "desktopicon"; \
   GroupDescription: "Additional icons:"; \
   Flags: unchecked
 
+; ── Remove files left over from older versions ───────────────────────────────
+[InstallDelete]
+; v1.0 used Whisper.net, which shipped ~700 MB of CUDA and native runtimes
+Type: files;          Name: "{app}\Whisper.net*.dll"
+Type: filesandordirs; Name: "{app}\runtimes"
+
 ; ── Files ─────────────────────────────────────────────────────────────────────
 [Files]
 ; Copy every file from the dotnet publish output folder
@@ -98,6 +106,6 @@ Filename: "{app}\{#MyAppExeName}"; \
 
 ; ── Clean up AppData models folder on uninstall (optional prompt) ─────────────
 [UninstallDelete]
-; Leave  %AppData%\VoiceKeyboard  intact by default so the user keeps
+; Leave  %AppData%\Akoway  intact by default so the user keeps
 ; downloaded models.  Uncomment the line below to delete them on uninstall.
-; Type: filesandordirs; Name: "{userappdata}\VoiceKeyboard"
+; Type: filesandordirs; Name: "{userappdata}\Akoway"
