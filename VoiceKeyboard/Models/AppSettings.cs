@@ -46,7 +46,9 @@ public enum DictationMode
 
 public enum SpeechModel
 {
-    BarkPro     // Underdog Bark 3.0 Pro
+    BarkPro = 0,    // Underdog Bark 3.0 Pro — most accurate, word for word
+    // 1 and 2 were Whisper small/medium in v1: skipped so old settings files fall back to Pro
+    BarkClean = 3   // Underdog Bark 3.0 Clean — drops ums, false starts and repeats
 }
 
 public enum InjectionMethod

@@ -8,3 +8,4 @@ librosa
 soundfile
 numpy
 jiwer
+constriction   # only for unpack_bark.py (Bark 3.0 Clean)

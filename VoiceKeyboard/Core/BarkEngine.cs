@@ -1,3 +1,4 @@
+using System.IO.Compression;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -8,8 +9,8 @@ using Microsoft.ML.OnnxRuntime.Tensors;
 namespace VoiceKeyboard.Core;
 
 /// <summary>
-/// Offline speech-to-text with Underdog Bark 3.0 Pro (Parakeet TDT 0.6B
-/// fine-tune), run through ONNX Runtime.
+/// Offline speech-to-text with Underdog Bark 3.0 Pro or Clean (Parakeet TDT
+/// 0.6B fine-tunes), run through ONNX Runtime. See BarkModels for the catalogue.
 ///
 /// Model folder (produced by tools/bark-onnx/export_bark_onnx.py):
 ///   preprocessor.onnx  waveform → normalized 128-bin log-mel features
@@ -18,14 +19,13 @@ namespace VoiceKeyboard.Core;
 ///   joiner.onnx        frame + prediction → token logits + duration logits
 ///   tokens.txt         SentencePiece vocabulary, blank last
 ///
-/// Runs on CPU only: about 0.06× real time on a laptop CPU. DirectML was
+/// Runs on CPU only: about 0.07× real time for Pro and 0.25× for Clean (whose
+/// encoder keeps fp32 activations to stay exact) on a laptop CPU. DirectML was
 /// measured slower (0.11×) because it can't run the int8 encoder ops natively.
 /// </summary>
 public sealed class BarkEngine : IDisposable
 {
     private const int SampleRate = 16000;
-    // Underdog's reference script prepends 0.25 s of silence before decoding
-    private const int LeadInSamples = SampleRate / 4;
     private const int MaxSymbolsPerFrame = 10;
 
     private InferenceSession? _preprocessor;
@@ -36,6 +36,7 @@ public sealed class BarkEngine : IDisposable
     private int _blankId;
     private int _decoderLayers;
     private int _decoderHidden;
+    private int _leadInSamples;  // silence added before the audio, as the model was evaluated
     private string? _loadedModelDir;
     private bool _disposed;
 
@@ -44,10 +45,12 @@ public sealed class BarkEngine : IDisposable
     /// <summary>
     /// Load the model from its folder.
     /// </summary>
-    public async Task LoadModelAsync(string modelDir)
+    public async Task LoadModelAsync(BarkModelSpec spec, string modelDir)
     {
-        if (!BarkModelDownloader.IsDownloaded(modelDir))
+        if (!BarkModelDownloader.IsDownloaded(spec, modelDir))
             throw new FileNotFoundException($"Model not found: {modelDir}");
+
+        _leadInSamples = (int)(spec.LeadInSeconds * SampleRate);
 
         if (_loadedModelDir == modelDir && IsReady) return;
 
@@ -126,8 +129,8 @@ public sealed class BarkEngine : IDisposable
 
     private string Transcribe(float[] samples, CancellationToken ct)
     {
-        var wave = new float[LeadInSamples + samples.Length];
-        samples.CopyTo(wave, LeadInSamples);
+        var wave = new float[_leadInSamples + samples.Length];
+        samples.CopyTo(wave, _leadInSamples);
 
         // 1. Waveform → log-mel features
         using var features = _preprocessor!.Run(new[]
@@ -274,36 +277,21 @@ public enum BenchmarkRating { Recommended, Usable, NotRecommended }
 
 public static class BarkModelDownloader
 {
-    /// <summary>
-    /// Where the converted model is hosted (files from tools/bark-onnx/export_bark_onnx.py).
-    /// </summary>
-    public const string RepoUrl = "https://huggingface.co/codingSalafi/akoway-bark-3.0-pro-onnx/resolve/main/";
-
-    private static readonly (string Name, long Size, string Sha256)[] Files =
-    {
-        ("preprocessor.onnx",      1_192_352, "b7e95a3d22e474366f1d79b1c9a20178d57c896d8f9d5c58b2f6bbf5f29ddda0"),
-        ("encoder.int8.onnx",    839_417_684, "377211191029a797971cc2eaf2a5aa653c1577319e76579dddd16241a890183f"),
-        ("decoder.onnx",          48_874_113, "1d74e62cc3068b769ff8a2db4ea422c438fd02d19a1d0ebe69925332d14ae93d"),
-        ("joiner.onnx",           21_020_669, "acbeb1c099f997611bf4b52a91595722ca1da76f83a3d43fa0ddba5167eb048e"),
-        ("tokens.txt",                93_939, "d58544679ea4bc6ac563d1f545eb7d474bd6cfa467f0a6e2c1dc1c7d37e3c35d"),
-        ("LICENSE-NOTICE.txt",           896, "15d87485db928258e079bbe5959e8ccbc3022c1e871ce596417d7b52d97964d0"),
-    };
-
-    public static long TotalBytes { get; } = Files.Sum(f => f.Size);
-
-    public static bool IsDownloaded(string modelDir)
-        => Files.All(f => new FileInfo(Path.Combine(modelDir, f.Name)) is { Exists: true } fi && fi.Length == f.Size);
+    public static bool IsDownloaded(BarkModelSpec spec, string modelDir)
+        => spec.Files.All(f => new FileInfo(Path.Combine(modelDir, f.Name)) is { Exists: true } fi && fi.Length == f.Size);
 
     private const int MaxAttempts = 6;
     // No data for this long counts as a dropped connection
     private static readonly TimeSpan StallTimeout = TimeSpan.FromSeconds(30);
 
     /// <summary>
-    /// Download every model file, resuming partial downloads and verifying
-    /// each file's SHA-256. Dropped or stalled connections are retried
-    /// automatically. Progress value = percent complete (0–100).
+    /// Download every file of a model, resuming partial downloads and verifying
+    /// each file's SHA-256; Brotli-compressed files are unpacked afterwards.
+    /// Dropped or stalled connections are retried automatically.
+    /// Progress value = percent complete (0–100).
     /// </summary>
     public static async Task DownloadAsync(
+        BarkModelSpec spec,
         string modelDir,
         IProgress<double>? progress = null,
         CancellationToken ct = default)
@@ -311,41 +299,56 @@ public static class BarkModelDownloader
         Directory.CreateDirectory(modelDir);
         using var http = new HttpClient { Timeout = Timeout.InfiniteTimeSpan };
 
+        long totalBytes = spec.DownloadBytes;
         long completedBytes = 0;
-        foreach (var (name, size, sha256) in Files)
+        foreach (var file in spec.Files)
         {
-            var destPath = Path.Combine(modelDir, name);
-            if (new FileInfo(destPath) is { Exists: true } existingFile && existingFile.Length == size)
+            var destPath = Path.Combine(modelDir, file.Name);
+            if (new FileInfo(destPath) is { Exists: true } existingFile && existingFile.Length == file.Size)
             {
-                completedBytes += size;
-                progress?.Report(100.0 * completedBytes / TotalBytes);
+                completedBytes += file.DownloadSize;
+                progress?.Report(100.0 * completedBytes / totalBytes);
                 continue;
             }
 
-            var tmpPath = destPath + ".tmp";
+            var tmpPath = Path.Combine(modelDir, file.DownloadName + ".tmp");
             for (int attempt = 1; ; attempt++)
             {
                 try
                 {
-                    await DownloadFileAsync(http, name, size, tmpPath, completedBytes, progress, ct);
+                    await DownloadFileAsync(http, spec.RepoUrl + file.DownloadName, file.DownloadSize, tmpPath,
+                                            completedBytes, totalBytes, progress, ct);
                     break;
                 }
                 catch (Exception ex) when (attempt < MaxAttempts && !ct.IsCancellationRequested &&
                                            ex is HttpRequestException or IOException)
                 {
-                    System.Diagnostics.Debug.WriteLine($"[BarkModelDownloader] {name} attempt {attempt} failed: {ex.Message}. Resuming.");
+                    System.Diagnostics.Debug.WriteLine($"[BarkModelDownloader] {file.DownloadName} attempt {attempt} failed: {ex.Message}. Resuming.");
                     await Task.Delay(TimeSpan.FromSeconds(2 * attempt), ct);
                 }
             }
 
-            if (!await HasHashAsync(tmpPath, sha256, ct))
+            if (!await HasHashAsync(tmpPath, file.DownloadSha256, ct))
             {
                 File.Delete(tmpPath);
-                throw new InvalidDataException($"{name} failed verification. Please try the download again.");
+                throw new InvalidDataException($"{file.Name} failed verification. Please try the download again.");
+            }
+
+            if (file.IsCompressed)
+            {
+                var unpackedPath = destPath + ".tmp";
+                await UnpackBrotliAsync(tmpPath, unpackedPath, ct);
+                File.Delete(tmpPath);
+                if (new FileInfo(unpackedPath).Length != file.Size)
+                {
+                    File.Delete(unpackedPath);
+                    throw new InvalidDataException($"{file.Name} failed to unpack. Please try the download again.");
+                }
+                tmpPath = unpackedPath;
             }
 
             File.Move(tmpPath, destPath, overwrite: true);
-            completedBytes += size;
+            completedBytes += file.DownloadSize;
         }
     }
 
@@ -354,8 +357,8 @@ public static class BarkModelDownloader
     /// Throws IOException if the connection drops, stalls or ends early.
     /// </summary>
     private static async Task DownloadFileAsync(
-        HttpClient http, string name, long size, string tmpPath,
-        long completedBytes, IProgress<double>? progress, CancellationToken ct)
+        HttpClient http, string url, long size, string tmpPath,
+        long completedBytes, long totalBytes, IProgress<double>? progress, CancellationToken ct)
     {
         long resumeFrom = File.Exists(tmpPath) ? new FileInfo(tmpPath).Length : 0;
         if (resumeFrom >= size) { File.Delete(tmpPath); resumeFrom = 0; }
@@ -365,7 +368,7 @@ public static class BarkModelDownloader
 
         try
         {
-            using var request = new HttpRequestMessage(HttpMethod.Get, RepoUrl + name);
+            using var request = new HttpRequestMessage(HttpMethod.Get, url);
             if (resumeFrom > 0) request.Headers.Range = new RangeHeaderValue(resumeFrom, null);
 
             using var response = await http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, stall.Token);
@@ -385,7 +388,7 @@ public static class BarkModelDownloader
                 stall.CancelAfter(StallTimeout); // data arrived — reset the stall timer
                 await fileStream.WriteAsync(buffer.AsMemory(0, read), ct);
                 fileBytes += read;
-                progress?.Report(100.0 * (completedBytes + fileBytes) / TotalBytes);
+                progress?.Report(100.0 * (completedBytes + fileBytes) / totalBytes);
             }
 
             if (fileBytes < size)
@@ -395,6 +398,14 @@ public static class BarkModelDownloader
         {
             throw new IOException($"No data received for {StallTimeout.TotalSeconds:0} s.");
         }
+    }
+
+    private static async Task UnpackBrotliAsync(string brotliPath, string outPath, CancellationToken ct)
+    {
+        await using var input = File.OpenRead(brotliPath);
+        await using var brotli = new BrotliStream(input, CompressionMode.Decompress);
+        await using var output = new FileStream(outPath, FileMode.Create, FileAccess.Write);
+        await brotli.CopyToAsync(output, 1 << 20, ct);
     }
 
     private static async Task<bool> HasHashAsync(string path, string expectedSha256, CancellationToken ct)

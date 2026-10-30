@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
 """
 Check the exported ONNX model against Underdog's reference transformers
-pipeline (runtime/transcribe_bark_pro.py: 0.25 s of leading silence, greedy TDT).
+pipeline (greedy TDT). Leading silence must match how the model was evaluated:
+0.25 s for Bark 3.0 Pro (runtime/transcribe_bark_pro.py), none for Bark 3.0 Clean
+(bark_loader.py).
 
 The ONNX path below is the same algorithm as Core/BarkEngine.cs, so this script
 is also the reference for the C# port.
 
 Usage:
     python compare_onnx.py --model ./bark-pro --onnx ./bark-pro-onnx [--refs refs.json] a.wav b.wav ...
+    python compare_onnx.py --model ./bark-clean-hf --onnx ./bark-clean-onnx --lead-in 0 a.wav ...
 """
 import argparse
 import json
@@ -22,12 +25,12 @@ import torch
 from transformers import AutoProcessor, ParakeetForTDT
 
 SAMPLE_RATE = 16000
-LEAD_IN = np.zeros(SAMPLE_RATE // 4, np.float32)
 MAX_SYMBOLS_PER_FRAME = 10
 
 
 class BarkOnnx:
-    def __init__(self, folder: Path, threads: int = 4):
+    def __init__(self, folder: Path, lead_in_s: float = 0.25, threads: int = 4):
+        self.lead_in = np.zeros(int(lead_in_s * SAMPLE_RATE), np.float32)
         opts = ort.SessionOptions()
         opts.intra_op_num_threads = threads
         load = lambda name: ort.InferenceSession(str(folder / name), opts, providers=["CPUExecutionProvider"])
@@ -39,7 +42,7 @@ class BarkOnnx:
         self.layers, self.hidden = h[0], h[2]
 
     def transcribe(self, audio: np.ndarray) -> str:
-        wave = np.concatenate([LEAD_IN, audio]).astype(np.float32)[None, :]
+        wave = np.concatenate([self.lead_in, audio]).astype(np.float32)[None, :]
         feats, frames = self.pre.run(None, {"waveforms": wave, "lengths": np.array([wave.shape[1]], np.int64)})
         enc, enc_len = self.enc.run(None, {"features": feats, "feature_lengths": frames})
 
@@ -75,13 +78,16 @@ def main():
     p.add_argument("--model", required=True)
     p.add_argument("--onnx", required=True)
     p.add_argument("--refs", help="JSON {wav name: ground-truth text}")
+    p.add_argument("--lead-in", type=float, default=0.25,
+                   help="seconds of silence before the audio (0.25 for Pro, 0 for Clean)")
     p.add_argument("wavs", nargs="+")
     args = p.parse_args()
 
     refs = json.load(open(args.refs)) if args.refs else {}
     processor = AutoProcessor.from_pretrained(args.model)
     model = ParakeetForTDT.from_pretrained(args.model, dtype=torch.float32).eval()
-    bark = BarkOnnx(Path(args.onnx))
+    bark = BarkOnnx(Path(args.onnx), args.lead_in)
+    lead_in = np.zeros(int(args.lead_in * SAMPLE_RATE), np.float32)
 
     diffs, truth, hf_all, onnx_all, rtfs = [], [], [], [], []
     for wav in args.wavs:
@@ -89,7 +95,7 @@ def main():
         audio = audio.mean(axis=1)
         assert sr == SAMPLE_RATE, f"{wav}: expected 16 kHz"
 
-        inputs = processor(np.concatenate([LEAD_IN, audio]), sampling_rate=SAMPLE_RATE, return_tensors="pt")
+        inputs = processor(np.concatenate([lead_in, audio]), sampling_rate=SAMPLE_RATE, return_tensors="pt")
         with torch.inference_mode():
             ids = model.generate(**inputs)
         ids = ids.sequences if hasattr(ids, "sequences") else ids

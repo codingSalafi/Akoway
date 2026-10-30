@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Media;
 using VoiceKeyboard.Models;
 using VoiceKeyboard.Services;
 
@@ -11,7 +12,8 @@ public partial class SetupWizard : Window
     private readonly ModelManager   _models;
     private CancellationTokenSource? _cts;
 
-    private const SpeechModel Model = SpeechModel.BarkPro;
+    // Which model the user has selected
+    private SpeechModel _selected = SpeechModel.BarkPro;
 
     public SetupWizard(SettingsService settings, ModelManager models)
     {
@@ -20,15 +22,46 @@ public partial class SetupWizard : Window
         _models   = models;
     }
 
+    // ── Card clicks (clicking anywhere on a card selects it) ──────────────────
+
+    private void CardPro_Click(object sender, MouseButtonEventArgs e)
+        => RbPro.IsChecked = true;
+
+    private void CardClean_Click(object sender, MouseButtonEventArgs e)
+        => RbClean.IsChecked = true;
+
+    // ── RadioButton changed → update card borders + _selected ────────────────
+
+    private void Radio_Checked(object sender, RoutedEventArgs e)
+    {
+        _selected = RbClean.IsChecked == true ? SpeechModel.BarkClean : SpeechModel.BarkPro;
+
+        // Update card borders so the active card is clearly highlighted
+        HighlightCard(CardPro,   _selected == SpeechModel.BarkPro);
+        HighlightCard(CardClean, _selected == SpeechModel.BarkClean);
+    }
+
+    private static void HighlightCard(System.Windows.Controls.Border? card, bool active)
+    {
+        if (card == null) return;
+        card.BorderBrush     = active
+            ? new SolidColorBrush(Color.FromRgb(0x8E, 0xD0, 0x20))
+            : new SolidColorBrush(Color.FromRgb(0xDD, 0xDD, 0xDD));
+        card.BorderThickness = active
+            ? new Thickness(2)
+            : new Thickness(1.5);
+    }
+
     // ── Download ──────────────────────────────────────────────────────────────
 
     private async void BtnDownload_Click(object sender, RoutedEventArgs e)
     {
         BtnDownload.IsEnabled = false;
         TxtSkip.IsEnabled     = false;
+        RbPro.IsEnabled = RbClean.IsEnabled = false;
 
         ProgressPanel.Visibility = Visibility.Visible;
-        TxtStatus.Text = $"Downloading {ModelName}…";
+        TxtStatus.Text = $"Downloading {ModelName(_selected)}…";
         TxtPercent.Text = "0%";
 
         _cts = new CancellationTokenSource();
@@ -41,13 +74,13 @@ public partial class SetupWizard : Window
 
         try
         {
-            await _models.DownloadModelAsync(Model, progress, _cts.Token);
+            await _models.DownloadModelAsync(_selected, progress, _cts.Token);
 
             // Persist as active model
-            _settings.Settings.ActiveModel = Model;
+            _settings.Settings.ActiveModel = _selected;
             await _settings.SaveAsync();
 
-            TxtStatus.Text  = $"✓ {ModelName} downloaded successfully!";
+            TxtStatus.Text  = $"✓ {ModelName(_selected)} downloaded successfully!";
             TxtPercent.Text = "100%";
             PbDownload.Value = 100;
 
@@ -80,7 +113,12 @@ public partial class SetupWizard : Window
     {
         BtnDownload.IsEnabled = true;
         TxtSkip.IsEnabled     = true;
+        RbPro.IsEnabled = RbClean.IsEnabled = true;
     }
 
-    private const string ModelName = "Bark 3.0 Pro (910 MB)";
+    private static string ModelName(SpeechModel model) => model switch
+    {
+        SpeechModel.BarkClean => "Bark 3.0 Clean (240 MB)",
+        _                     => "Bark 3.0 Pro (910 MB)"
+    };
 }

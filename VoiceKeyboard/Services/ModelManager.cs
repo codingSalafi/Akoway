@@ -9,11 +9,6 @@ namespace VoiceKeyboard.Services;
 /// </summary>
 public sealed class ModelManager
 {
-    private static readonly Dictionary<SpeechModel, string> FolderNames = new()
-    {
-        [SpeechModel.BarkPro] = "bark-3.0-pro",
-    };
-
     private readonly SettingsService _settings;
 
     public ModelManager(SettingsService settings)
@@ -26,13 +21,13 @@ public sealed class ModelManager
     public string ModelsDirectory => _settings.Settings.ModelsDirectory;
 
     public string GetModelPath(SpeechModel model)
-        => Path.Combine(ModelsDirectory, FolderNames[model]);
+        => Path.Combine(ModelsDirectory, BarkModels.For(model).FolderName);
 
     public string GetActiveModelPath()
         => GetModelPath(_settings.Settings.ActiveModel);
 
     public bool IsDownloaded(SpeechModel model)
-        => BarkModelDownloader.IsDownloaded(GetModelPath(model));
+        => BarkModelDownloader.IsDownloaded(BarkModels.For(model), GetModelPath(model));
 
     public IReadOnlyList<ModelInfo> GetAllModels()
     {
@@ -44,7 +39,7 @@ public sealed class ModelManager
             return new ModelInfo
             {
                 Model = model,
-                FileName = FolderNames[model],
+                FileName = BarkModels.For(model).FolderName,
                 IsDownloaded = exists,
                 FileSizeBytes = exists
                     ? new DirectoryInfo(path).EnumerateFiles().Sum(f => f.Length)
@@ -63,7 +58,7 @@ public sealed class ModelManager
         IProgress<double>? progress = null,
         CancellationToken ct = default)
     {
-        await BarkModelDownloader.DownloadAsync(GetModelPath(model), progress, ct);
+        await BarkModelDownloader.DownloadAsync(BarkModels.For(model), GetModelPath(model), progress, ct);
     }
 
     public void DeleteModel(SpeechModel model)

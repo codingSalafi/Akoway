@@ -278,7 +278,8 @@ public partial class SettingsWindow : Window
 
     private static string ModelDisplayName(SpeechModel model) => model switch
     {
-        SpeechModel.BarkPro => "Bark 3.0 Pro",
+        SpeechModel.BarkPro   => "Bark 3.0 Pro",
+        SpeechModel.BarkClean => "Bark 3.0 Clean",
         _ => model.ToString()
     };
 }

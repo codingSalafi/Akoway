@@ -51,40 +51,66 @@
                            FontSize="20" FontWeight="Bold" Foreground="#0D0D0D"/>
                 <TextBlock Margin="0,7,0,0" FontSize="13" Foreground="#333333"
                            TextWrapping="Wrap"
-                           Text="Download the speech recognition model to get started.&#x0a;It runs fully offline — no internet required after download."/>
+                           Text="Download a speech recognition model to get started.&#x0a;It runs fully offline — no internet required after download."/>
             </StackPanel>
         </Border>
 
-        <!-- ── Model card ──────────────────────────────────────────────────── -->
+        <!-- ── Model cards ─────────────────────────────────────────────────── -->
         <StackPanel Margin="24,20,24,0">
-            <TextBlock Text="Speech model" FontSize="14" FontWeight="SemiBold"
+            <TextBlock Text="Choose a speech model" FontSize="14" FontWeight="SemiBold"
                        Foreground="#0D0D0D" Margin="0,0,0,12"/>
 
-            <Border x:Name="CardBark" CornerRadius="10" Background="White"
+            <!-- Pro — default -->
+            <Border x:Name="CardPro" CornerRadius="10" Background="White"
                     BorderThickness="2" BorderBrush="#8ED020"
-                    Padding="16,13">
+                    Padding="16,13" Margin="0,0,0,10" Cursor="Hand"
+                    MouseLeftButtonDown="CardPro_Click">
                 <Grid>
                     <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <StackPanel>
+                    <RadioButton x:Name="RbPro" GroupName="Model" IsChecked="True"
+                                 VerticalAlignment="Center" Margin="0,0,14,0"
+                                 Checked="Radio_Checked"/>
+                    <StackPanel Grid.Column="1">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="Bark 3.0 Pro" FontSize="14" FontWeight="SemiBold"/>
                             <TextBlock Text=" · 910 MB" FontSize="13" Foreground="#777" VerticalAlignment="Center"/>
                         </StackPanel>
-                        <TextBlock Text="Highly accurate, with punctuation and capitals. Runs fast on any modern CPU — no GPU needed."
+                        <TextBlock Text="Most accurate. Writes exactly what you say, with punctuation and capitals."
                                    FontSize="12" Foreground="#555" Margin="0,4,0,0" TextWrapping="Wrap"/>
-                        <TextBlock Text="By Underdog (Conway Research) · CC-BY 4.0"
-                                   FontSize="11" Foreground="#888" Margin="0,4,0,0"/>
                     </StackPanel>
-                    <Border Grid.Column="1" Background="#C9FE68" CornerRadius="6"
+                    <Border Grid.Column="2" Background="#C9FE68" CornerRadius="6"
                             Padding="8,3" VerticalAlignment="Center" Margin="10,0,0,0">
                         <TextBlock Text="Recommended" FontSize="11" FontWeight="SemiBold"/>
                     </Border>
                 </Grid>
             </Border>
 
+            <!-- Clean -->
+            <Border x:Name="CardClean" CornerRadius="10" Background="White"
+                    BorderThickness="1.5" BorderBrush="#DDDDDD"
+                    Padding="16,13" Cursor="Hand"
+                    MouseLeftButtonDown="CardClean_Click">
+                <StackPanel Orientation="Horizontal">
+                    <RadioButton x:Name="RbClean" GroupName="Model"
+                                 VerticalAlignment="Center" Margin="0,0,14,0"
+                                 Checked="Radio_Checked"/>
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="Bark 3.0 Clean" FontSize="14" FontWeight="SemiBold"/>
+                            <TextBlock Text=" · 240 MB" FontSize="13" Foreground="#777" VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <TextBlock Text="Tidies as you speak: drops &quot;um&quot;, false starts and repeated words. Smaller download."
+                                   FontSize="12" Foreground="#555" Margin="0,4,0,0" TextWrapping="Wrap" MaxWidth="380"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <TextBlock Text="Both by Underdog (Conway Research) · CC-BY 4.0 · You can add the other one later in Settings."
+                       FontSize="11" Foreground="#888" Margin="2,10,0,0" TextWrapping="Wrap"/>
         </StackPanel>
 
         <!-- ── Progress ────────────────────────────────────────────────────── -->

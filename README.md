@@ -20,7 +20,7 @@ Akoway is a lightweight Windows app that lets you dictate text into **any** appl
 - ⚡ **Works anywhere** — dictate into VS Code, Notion, Word, browsers, anywhere
 - 🪟 **Floating overlay** — minimal pill UI that stays out of your way
 - ⌨️ **Global hotkey** — bring it up with `Ctrl+Alt+Space` from anywhere
-- 🤖 **Bark 3.0 Pro** — state-of-the-art open speech recognition, with punctuation and capitals
+- 🤖 **Bark 3.0 Pro or Clean** — state-of-the-art open speech recognition, with punctuation and capitals; Clean also drops "um"s and repeats
 - 🔧 **Customisable** — change hotkey, injection method, model
 - 🚀 **Launches on startup** — always ready when you need it
 
@@ -94,22 +94,32 @@ VoiceKeyboard/
 
 ## Models
 
-Akoway downloads its speech model on first run. Nothing is bundled in the installer.
+Akoway downloads its speech model on first run. Nothing is bundled in the installer. Pick one in the setup wizard; you can add the other later in Settings.
 
-| Model | Size | Speed (CPU) | Notes |
+| Model | Download | Speed (CPU) | Notes |
 |-------|------|-------------|-------|
-| Bark 3.0 Pro | ~910 MB | ~15× faster than real time | English, punctuation and capitals |
+| Bark 3.0 Pro (default) | ~910 MB | ~15× faster than real time | Most accurate; writes exactly what you say, with punctuation and capitals |
+| Bark 3.0 Clean | ~240 MB | ~4× faster than real time | Tidies as you speak: drops "um", false starts and repeated words |
 
-Bark 3.0 Pro is by [Underdog / Conway Research](https://huggingface.co/ConwayResearch/Underdog-Bark-3.0-Pro) (CC-BY 4.0), a fine-tune of NVIDIA Parakeet TDT 0.6B. Akoway runs an ONNX conversion of it with ONNX Runtime on the CPU; the encoder's matrix weights are int8, which keeps the same accuracy as the original. No GPU is needed.
+Both are by [Underdog / Conway Research](https://huggingface.co/ConwayResearch) (CC-BY 4.0), fine-tunes of NVIDIA Parakeet TDT 0.6B. Akoway runs ONNX conversions of them with ONNX Runtime on the CPU; no GPU is needed. Both conversions match the original models' transcripts on our test set (Pro: same WER; Clean: identical text on all 74 test clips).
 
 To rebuild the ONNX files from the original weights, see [`tools/bark-onnx`](tools/bark-onnx):
 
 ```bash
 pip install torch --index-url https://download.pytorch.org/whl/cpu
 pip install -r tools/bark-onnx/requirements.txt
+
+# Pro
 hf download ConwayResearch/Underdog-Bark-3.0-Pro --local-dir bark-pro
 python tools/bark-onnx/export_bark_onnx.py --model bark-pro --out bark-pro-onnx
 python tools/bark-onnx/compare_onnx.py --model bark-pro --onnx bark-pro-onnx some-clip.wav
+
+# Clean (ships as a packed .bark file: unpack it first; per-row int8 keeps its weights exact)
+hf download ConwayResearch/Underdog-Bark-3.0-Clean --local-dir bark-clean
+python tools/bark-onnx/unpack_bark.py bark-clean bark-clean-hf
+python tools/bark-onnx/export_bark_onnx.py --model bark-clean-hf --out bark-clean-onnx --per-row-int8 \
+    --repo ConwayResearch/Underdog-Bark-3.0-Clean
+python tools/bark-onnx/compare_onnx.py --model bark-clean-hf --onnx bark-clean-onnx --lead-in 0 some-clip.wav
 ```
 
 ---
@@ -120,7 +130,7 @@ python tools/bark-onnx/compare_onnx.py --model bark-pro --onnx bark-pro-onnx som
 |---------|---------|-------|
 | Hotkey | Ctrl+Alt+Space | Configurable in Settings |
 | Mode | Toggle | Toggle or Push-to-Talk |
-| Active model | Bark 3.0 Pro | |
+| Active model | Bark 3.0 Pro | Bark 3.0 Pro / Bark 3.0 Clean |
 | Injection | Auto | SendInput → Clipboard fallback |
 | Launch on startup | Off | Configurable in Settings |
 

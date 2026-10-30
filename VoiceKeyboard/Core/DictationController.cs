@@ -69,7 +69,7 @@ public sealed class DictationController : IDisposable
 
         try
         {
-            await _engine.LoadModelAsync(modelPath);
+            await _engine.LoadModelAsync(BarkModels.For(s.ActiveModel), modelPath);
         }
         catch (Exception ex)
         {
