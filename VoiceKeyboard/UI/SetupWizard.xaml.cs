@@ -34,7 +34,9 @@ public partial class SetupWizard : Window
 
     private void Radio_Checked(object sender, RoutedEventArgs e)
     {
-        _selected = RbClean.IsChecked == true ? SpeechModel.BarkClean : SpeechModel.BarkPro;
+        // Fires while InitializeComponent is still building the window (RbPro starts checked),
+        // before RbClean and the cards exist, so go by the sender rather than the fields
+        _selected = ReferenceEquals(sender, RbClean) ? SpeechModel.BarkClean : SpeechModel.BarkPro;
 
         // Update card borders so the active card is clearly highlighted
         HighlightCard(CardPro,   _selected == SpeechModel.BarkPro);
