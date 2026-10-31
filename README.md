@@ -36,7 +36,7 @@ Akoway is a lightweight Windows app that lets you dictate text into **any** appl
 
 ## Getting Started
 
-1. Run `Akoway-Setup-v2.1.0.exe`
+1. Run `Akoway-Setup-v2.1.1.exe`
 2. On first launch, download the speech model (~910 MB, internet required for this step only)
 3. Press `Ctrl+Alt+F9` anywhere to bring up the overlay
 4. Click the mic to start dictating, click again to stop and insert text

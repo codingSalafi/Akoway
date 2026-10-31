@@ -19,7 +19,7 @@
 ; ─────────────────────────────────────────────────────────────────────────────
 
 #define MyAppName      "Akoway"
-#define MyAppVersion   "2.1.0"
+#define MyAppVersion   "2.1.1"
 #define MyAppPublisher "Akoway"
 #define MyAppURL       "https://github.com/codingSalafi/akoway"
 #define MyAppExeName   "Akoway.exe"
