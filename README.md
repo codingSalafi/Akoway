@@ -19,7 +19,7 @@ Akoway is a lightweight Windows app that lets you dictate text into **any** appl
 - 🎙️ **Offline & Private** — audio never leaves your device
 - ⚡ **Works anywhere** — dictate into VS Code, Notion, Word, browsers, anywhere
 - 🪟 **Floating overlay** — minimal pill UI that stays out of your way
-- ⌨️ **Global hotkey** — bring it up with `Ctrl+Alt+Space` from anywhere
+- ⌨️ **Global hotkey** — bring it up with `Ctrl+Alt+F9` from anywhere
 - 🤖 **Bark 3.0 Pro or Clean** — state-of-the-art open speech recognition, with punctuation and capitals; Clean also drops "um"s and repeats
 - 🔧 **Customisable** — change hotkey, injection method, model
 - 🚀 **Launches on startup** — always ready when you need it
@@ -38,7 +38,7 @@ Akoway is a lightweight Windows app that lets you dictate text into **any** appl
 
 1. Run `Akoway-Setup-v2.1.0.exe`
 2. On first launch, download the speech model (~910 MB, internet required for this step only)
-3. Press `Ctrl+Alt+Space` anywhere to bring up the overlay
+3. Press `Ctrl+Alt+F9` anywhere to bring up the overlay
 4. Click the mic to start dictating, click again to stop and insert text
 
 ---
@@ -128,7 +128,7 @@ python tools/bark-onnx/compare_onnx.py --model bark-clean-hf --onnx bark-clean-o
 
 | Setting | Default | Notes |
 |---------|---------|-------|
-| Hotkey | Ctrl+Alt+Space | Configurable in Settings |
+| Hotkey | Ctrl+Alt+F9 | Configurable in Settings |
 | Mode | Toggle | Toggle or Push-to-Talk |
 | Active model | Bark 3.0 Pro | Bark 3.0 Pro / Bark 3.0 Clean |
 | Injection | Auto | SendInput → Clipboard fallback |

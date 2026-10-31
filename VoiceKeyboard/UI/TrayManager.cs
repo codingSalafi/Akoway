@@ -17,6 +17,8 @@ public sealed class TrayManager : IDisposable
     private readonly SettingsService _settings;
     private readonly ModelManager _modelManager;
     private readonly DictationController _dictation;
+    private MenuItem? _dictateItem;
+    private DictationStatus _status = DictationStatus.Idle;
     private bool _disposed;
 
     public event EventHandler? OpenSettingsRequested;
@@ -35,7 +37,7 @@ public sealed class TrayManager : IDisposable
     {
         _trayIcon = new TaskbarIcon
         {
-            ToolTipText = "Akoway — Ready\nCtrl+Alt+Space to dictate",
+            ToolTipText = ReadyToolTip,
             Icon = LoadIcon("microphone.ico"),
             ContextMenu = BuildContextMenu()
         };
@@ -44,8 +46,19 @@ public sealed class TrayManager : IDisposable
         _trayIcon.TrayMouseDoubleClick += (_, _) => OpenSettingsRequested?.Invoke(this, EventArgs.Empty);
     }
 
+    private string Hotkey => HotkeyText.Format(_settings.Settings.HotkeyModifiers, _settings.Settings.HotkeyVirtualKey);
+    private string ReadyToolTip => $"Akoway — Ready\n{Hotkey} to dictate";
+
+    /// <summary>Call after the hotkey changes in Settings so the menu and tooltip show the new one.</summary>
+    public void RefreshHotkey()
+    {
+        if (_dictateItem != null) _dictateItem.Header = $"_Start Dictation ({Hotkey})";
+        if (_trayIcon != null && _status == DictationStatus.Idle) _trayIcon.ToolTipText = ReadyToolTip;
+    }
+
     public void UpdateState(DictationStatus status)
     {
+        _status = status;
         if (_trayIcon == null) return;
 
         switch (status)
@@ -72,7 +85,7 @@ public sealed class TrayManager : IDisposable
             case DictationStatus.Idle:
             default:
                 _trayIcon.Icon = LoadIcon("microphone.ico");
-                _trayIcon.ToolTipText = "Akoway — Ready\nCtrl+Alt+Space to dictate";
+                _trayIcon.ToolTipText = ReadyToolTip;
                 break;
         }
     }
@@ -97,7 +110,7 @@ public sealed class TrayManager : IDisposable
         menu.Items.Add(header);
         menu.Items.Add(new Separator());
 
-        var dictateItem = new MenuItem { Header = "_Start Dictation (Ctrl+Alt+Space)" };
+        var dictateItem = _dictateItem = new MenuItem { Header = $"_Start Dictation ({Hotkey})" };
         dictateItem.Click += (_, _) =>
         {
             ShowOverlayRequested?.Invoke(this, EventArgs.Empty);

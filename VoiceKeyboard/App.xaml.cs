@@ -138,6 +138,7 @@ public partial class App : Application
             {
                 _hotkeyManager?.Unregister();
                 RegisterHotkey();
+                _trayManager?.RefreshHotkey();
             };
             win.Show();
             win.Activate();
