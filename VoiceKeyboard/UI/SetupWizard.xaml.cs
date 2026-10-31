@@ -13,7 +13,7 @@ public partial class SetupWizard : Window
     private CancellationTokenSource? _cts;
 
     // Which model the user has selected
-    private SpeechModel _selected = SpeechModel.BarkPro;
+    private SpeechModel _selected = SpeechModel.BarkClean;
 
     public SetupWizard(SettingsService settings, ModelManager models)
     {
@@ -34,9 +34,9 @@ public partial class SetupWizard : Window
 
     private void Radio_Checked(object sender, RoutedEventArgs e)
     {
-        // Fires while InitializeComponent is still building the window (RbPro starts checked),
-        // before RbClean and the cards exist, so go by the sender rather than the fields
-        _selected = ReferenceEquals(sender, RbClean) ? SpeechModel.BarkClean : SpeechModel.BarkPro;
+        // Fires while InitializeComponent is still building the window (RbClean starts checked),
+        // so go by the sender rather than relying on every field being set yet
+        _selected = ReferenceEquals(sender, RbPro) ? SpeechModel.BarkPro : SpeechModel.BarkClean;
 
         // Update card borders so the active card is clearly highlighted
         HighlightCard(CardPro,   _selected == SpeechModel.BarkPro);

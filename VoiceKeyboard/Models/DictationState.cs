@@ -30,8 +30,8 @@ public class ModelInfo
     public bool IsDownloaded { get; set; }
     public string DisplayName => Model switch
     {
-        SpeechModel.BarkPro   => "Bark 3.0 Pro (~910 MB) — Most accurate (Default)",
-        SpeechModel.BarkClean => "Bark 3.0 Clean (~240 MB) — Removes ums and repeats",
+        SpeechModel.BarkPro   => "Bark 3.0 Pro (~910 MB) — Most accurate",
+        SpeechModel.BarkClean => "Bark 3.0 Clean (~240 MB) — Removes ums and repeats (Recommended)",
         _ => Name
     };
 }
